@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class GroundController : MonoBehaviour {
 
-    public static GroundController instance;
-
     void Update()
     {
         if (Input.GetKey(KeyCode.Tab))

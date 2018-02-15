@@ -4,7 +4,7 @@ using System;
 
 public class WorldGenerator : MonoBehaviour
 {
-
+    // Prefabs of all the tiles
     public GameObject ground_T;
     public GameObject ground_B;
     public GameObject ground_L;
@@ -19,22 +19,23 @@ public class WorldGenerator : MonoBehaviour
     public GameObject ground_R_T;
     public GameObject ground;
 
-    public GameObject Test_1;
-    //public GameObject
+    //Test Objects
+    public GameObject Test_Object;
+    public int Testint = 0;
 
-
-    //Cave Size
+    // Map Size
     public int width;
     public int height;
 
-    //Random Seeds
+    // Seeds
     public string seed;
     public bool useRandomSeed;
 
-    //Amount of the cave is open
+    //Random fill percent 
     [Range(0, 100)]
     public int randomFillPercent;
 
+    // Map array 
     int[,] map;
 
     //This runs when the program starts
@@ -43,36 +44,34 @@ public class WorldGenerator : MonoBehaviour
         GenerateMap();
     }
 
-    //This runs every frame
+    //This runs every frame and at the moment is only used for finding keys pressed
     void Update()
     {
+        // Keys used for showing the map on screen
         if (Input.GetKeyDown(KeyCode.Z))
             GenerateMap();
-
         if (Input.GetKeyDown(KeyCode.X))
-        {
-            //for (int i = 0; i < 5; i++)
             SmoothMap();
-        }
-
         if (Input.GetKeyDown(KeyCode.C))
-        {
             CreateWorld();
-            Debug.Log("Mouse 3 was clicked");
-        }
+
+        // Keys used for the Counting Input function
+        if (Input.GetKeyDown(KeyCode.UpArrow))
+            CountInput("Up");
+        if (Input.GetKeyDown(KeyCode.DownArrow))
+            CountInput("Down");
+        if (Input.GetKeyDown(KeyCode.KeypadEnter))
+            CountInput("Enter");
     }
 
-    //Holds all the code to generate the cave
+    // The begining process of creating the grid
     void GenerateMap()
     {
         map = new int[width, height];
         RandomFillMap();
-
-        //for (int i = 0; i < 10; i++)
-        //SmoothMap();
     }
 
-    //Sets the amount of the cave is open
+    // Randomly sets cells to 1 or 0
     void RandomFillMap()
     {
         if (useRandomSeed)
@@ -92,45 +91,33 @@ public class WorldGenerator : MonoBehaviour
         }
     }
 
+    // Returns the value of the cell it is given
+    int Rule(int x,int y, int wallcount)
+    {
+        int returnvalue = 0;
+
+        if (wallcount >= 5)
+            returnvalue = 1;
+        else
+            returnvalue = 0;
+
+        return returnvalue;
+    }
     
 
-    //Selects which cells will be on and off
+    // Runs the next run of the CA
     void SmoothMap()
     {
-        //GroundController.instance.DestoryObjects();
-
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
-                int neighbourWallTiles = GetSurroundingWallCount(x, y);
-
-                // 9 Options
-                // 8 Neighbours = Ground
-                // 7 Neighbours = Ground_L , Ground_R_T ,  Ground_L_T ,  Ground_R_T ,  Ground_T
-                // 6 Neighbours = 
-                // 5 Neighbours = 
-                // 4 Neighbours = 
-                // 3 Neighbours = 
-                // 2 Neighbours = 
-                // 1 Neighbours = 
-                // 0 Neighbours = Remove its self (Mabye change leter)
-
-                // Some option to add enemys
-
-                
-
-                if (neighbourWallTiles >= 5)
-                    map[x, y] = 1;
-                else
-                    map[x, y] = 0;
+                map[x,y] = Rule(x, y, GetSurroundingWallCount(x, y));            
             }
         }
-
-        //CreateWorld();
     }
 
-    //Finds the amount of walls 
+    // Returns the aount of walls of the given cell
     int GetSurroundingWallCount(int gridX, int gridY)
     {
         int wallCount = 0;
@@ -150,7 +137,7 @@ public class WorldGenerator : MonoBehaviour
         return wallCount;
     }
 
-    //Draws the cave and gives color
+    // Debug Stuff 
     //void OnDrawGizmos()
     //{
     //    if (map != null)
@@ -169,6 +156,7 @@ public class WorldGenerator : MonoBehaviour
     //    }
     //}
 
+    // Spawns in objects to create the world
     void CreateWorld()
     {
         if (map != null)
@@ -181,13 +169,13 @@ public class WorldGenerator : MonoBehaviour
 
                     if (map[x, y] == 0 && y == 0 && map[x - 1, y] == 0 && map[x + 1, y] == 0)
                     {
-                        map[x, y] = 2;
+                        //map[x, y] = 2;
 
                     }
 
                     if(map[x,y] == 2)
                     {
-                        Instantiate(Test_1, pos, Quaternion.identity);
+                        //Instantiate(Test_Object, pos, Quaternion.identity);
                     }
 
                     if (map[x, y] == 1)
@@ -225,19 +213,21 @@ public class WorldGenerator : MonoBehaviour
         }
     }
 
-    void ResetWorld()
+    int count = 0;
+    
+    void CountInput(string keydown)
     {
-        if (map != null)
+        if (keydown == "Up")
         {
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    Vector3 pos = new Vector3(-width / 2 + x + .5f, -height / 2 + y + .5f, 0);
-
-                    Instantiate(ground_T, pos, Quaternion.identity);
-                }
-            }
+            count++;
+        }
+        else if (keydown == "Down")
+        {
+            count--;
+        }
+        else if(keydown == "Enter")
+        {
+            Debug.Log("Input Value: " + count);
         }
     }
 
