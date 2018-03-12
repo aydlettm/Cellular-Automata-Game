@@ -27,6 +27,8 @@ public class WorldGenerator : MonoBehaviour
     public int width;
     public int height;
 
+    public int cellSightLength;
+
     // Seeds
     public string seed;
     public bool useRandomSeed;
@@ -36,7 +38,7 @@ public class WorldGenerator : MonoBehaviour
     public int randomFillPercent;
 
     // Map array 
-    int[,] map;
+    int[,][,] map;
 
     //This runs when the program starts
     void Start()
@@ -67,7 +69,15 @@ public class WorldGenerator : MonoBehaviour
     // The begining process of creating the grid
     void GenerateMap()
     {
-        map = new int[width, height];
+        map = new int[width, height][,];
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                map[x, y] = new int[cellSightLength + cellSightLength + 1, cellSightLength + cellSightLength + 1];
+            }
+        }
         RandomFillMap();
     }
 
@@ -84,9 +94,9 @@ public class WorldGenerator : MonoBehaviour
             for (int y = 0; y < height; y++)
             {
                 if (x == 0 || x == width - 1 )
-                    map[x, y] = 1;
+                    map[x, y][1,1] = 1;
                 else
-                    map[x, y] = (pseudoRandom.Next(0, 100) < randomFillPercent) ? 1 : 0;
+                    map[x, y][1,1] = (pseudoRandom.Next(0, 100) < randomFillPercent) ? 1 : 0;
             }
         }
     }
@@ -94,14 +104,11 @@ public class WorldGenerator : MonoBehaviour
     // Returns the value of the cell it is given
     int Rule(int x,int y, int wallcount)
     {
-        int returnvalue = 0;
-
+        // Original Rule: wallcount >= 5
         if (wallcount >= 5)
-            returnvalue = 1;
+            return 1;
         else
-            returnvalue = 0;
-
-        return returnvalue;
+            return 0;
     }
     
 
@@ -112,7 +119,28 @@ public class WorldGenerator : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
-                map[x,y] = Rule(x, y, GetSurroundingWallCount(x, y));            
+                map[x,y][1,1] = Rule(x, y, GetSurroundingWallCount(x, y));            
+            }
+        }
+        
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                GetNeighbors(x,y);
+
+                //map[x, height - 1][1,1] = 0;
+                //map[x, height - 2][1,1] = 0;
+
+                if (x != 0 && x < width - 1 && y != 0 && y < height - 1)
+                {
+                    if (map[x - 1, y + 1][1,1] == 1 || map[x, y + 1][1,1] == 1 || map[x + 1, y + 1][1,1] == 1)
+                    {
+                        //map[x - 1, y + 1] = 0;
+                        //map[x, y + 1] = 0;
+                        //map[x + 1, y + 1] = 0;
+                    }
+                }
             }
         }
     }
@@ -128,7 +156,7 @@ public class WorldGenerator : MonoBehaviour
                 if (neighbourX >= 0 && neighbourX < width && neighbourY >= 0 && neighbourY < height)
                 {
                     if (neighbourX != gridX || neighbourY != gridY)
-                        wallCount += map[neighbourX, neighbourY];
+                        wallCount += map[neighbourX, neighbourY][1,1];
                 }
                 else
                     wallCount++;
@@ -137,7 +165,43 @@ public class WorldGenerator : MonoBehaviour
         return wallCount;
     }
 
-    // Debug Stuff 
+    // Sets the neighbors for a cell using a the veriable cellSightLength
+    void GetNeighbors(int x, int y)
+    {
+        for (int j = -cellSightLength; j < cellSightLength+1; j++)
+        {
+            for (int i = -cellSightLength; i < cellSightLength+1; i++)
+            {
+                
+                if (i == 0 && j == 0) 
+                    continue;
+                else if (x == 0 && j < 0)
+                    continue;
+                else if (y == 0 && i < 0)
+                    continue;
+                else if ((x == width - 1) && (j > 0))
+                    continue;
+                else if ((y == height - 1) && (i > 0))
+                    continue;
+                else if (map[x + j, y + i][1, 1] == 1)
+                    map[x, y][j + cellSightLength, i + cellSightLength] = 1;
+                    
+            }
+        }
+
+        // DEBUG STUFF
+
+        //for (int j = 0; j < cellSightLength; j++)
+        //{
+        //    for (int i = 0; i < cellSightLength; i++)
+        //    {
+        //        Debug.Log("[" + x + "," + y + "]" + "[" + (j + 0) + "," + (i + 0) + "]: " + map[x, y][j, i]);
+        //    }
+        //}
+    }
+
+    // DEBUG STUFF
+
     //void OnDrawGizmos()
     //{
     //    if (map != null)
@@ -156,6 +220,7 @@ public class WorldGenerator : MonoBehaviour
     //    }
     //}
 
+
     // Spawns in objects to create the world
     void CreateWorld()
     {
@@ -167,42 +232,31 @@ public class WorldGenerator : MonoBehaviour
                 {
                     Vector3 pos = new Vector3(-width / 2 + x + .5f, -height / 2 + y + .5f, 0);
 
-                    if (map[x, y] == 0 && y == 0 && map[x - 1, y] == 0 && map[x + 1, y] == 0)
+                    if (map[x, y][1,1] == 1)
                     {
-                        //map[x, y] = 2;
-
-                    }
-
-                    if(map[x,y] == 2)
-                    {
-                        //Instantiate(Test_Object, pos, Quaternion.identity);
-                    }
-
-                    if (map[x, y] == 1)
-                    {
-                        if (y < height - 1 && x < width - 1 && x != 0 && map[x, y + 1] == 0 && map[x - 1, y] == 1 && map[x + 1, y] == 1)
+                        if (y < height - 1 && x < width - 1 && x != 0 && map[x, y + 1][1, 1] == 0 && map[x - 1, y][1, 1] == 1 && map[x + 1, y][1, 1] == 1)
                             Instantiate(ground_T, pos, Quaternion.identity);
-                        else if (x < width - 1 && x != 0 && y != 0 && map[x, y - 1] == 0 && map[x - 1, y] == 1 && map[x + 1, y] == 1)
+                        else if (x < width - 1 && x != 0 && y != 0 && map[x, y - 1][1, 1] == 0 && map[x - 1, y][1, 1] == 1 && map[x + 1, y][1, 1] == 1)
                             Instantiate(ground_B, pos, Quaternion.identity);
-                        else if (y < height - 1 && x != 0 && y != 0 && map[x, y + 1] == 1 && map[x - 1, y] == 0 && map[x, y - 1] == 1)
+                        else if (y < height - 1 && x != 0 && y != 0 && map[x, y + 1][1, 1] == 1 && map[x - 1, y][1, 1] == 0 && map[x, y - 1][1, 1] == 1)
                             Instantiate(ground_L, pos, Quaternion.identity);
-                        else if (y < height - 1 && x < width - 1 && x != 0 && y != 0 && map[x, y - 1] == 1 && map[x + 1, y] == 1 && map[x - 1, y] == 0 && map[x - 1, y + 1] == 0 && map[x, y + 1] == 0)
+                        else if (y < height - 1 && x < width - 1 && x != 0 && y != 0 && map[x, y - 1][1, 1] == 1 && map[x + 1, y][1, 1] == 1 && map[x - 1, y][1, 1] == 0 && map[x - 1, y + 1][1, 1] == 0 && map[x, y + 1][1, 1] == 0)
                             Instantiate(ground_L_A, pos, Quaternion.identity);
-                        else if (x != 0 && y != 0 && map[x, y - 1] == 1 && map[x - 1, y] == 1 && map[x - 1, y - 1] == 0)
+                        else if (x != 0 && y != 0 && map[x, y - 1][1, 1] == 1 && map[x - 1, y][1, 1] == 1 && map[x - 1, y - 1][1, 1] == 0)
                             Instantiate(ground_L_B, pos, Quaternion.identity);
-                        else if (y < height - 1 && x < width - 1 && x != 0 && y != 0 && map[x, y + 1] == 1 && map[x + 1, y] == 1 && map[x - 1, y - 1] == 0 && map[x, y - 1] == 0 && map[x - 1, y] == 0)
+                        else if (y < height - 1 && x < width - 1 && x != 0 && y != 0 && map[x, y + 1][1, 1] == 1 && map[x + 1, y][1, 1] == 1 && map[x - 1, y - 1][1, 1] == 0 && map[x, y - 1][1, 1] == 0 && map[x - 1, y][1, 1] == 0)
                             Instantiate(ground_L_A_B, pos, Quaternion.identity);
-                        else if (y < height - 1 && x != 0 && map[x, y + 1] == 1 && map[x - 1, y] == 1 && map[x - 1, y + 1] == 0)
+                        else if (y < height - 1 && x != 0 && map[x, y + 1][1, 1] == 1 && map[x - 1, y][1, 1] == 1 && map[x - 1, y + 1][1, 1] == 0)
                             Instantiate(ground_L_T, pos, Quaternion.identity);
-                        else if (y < height - 1 && x < width - 1 && y != 0 && map[x, y + 1] == 1 && map[x + 1, y] == 0 && map[x, y - 1] == 1)
+                        else if (y < height - 1 && x < width - 1 && y != 0 && map[x, y + 1][1, 1] == 1 && map[x + 1, y][1, 1] == 0 && map[x, y - 1][1, 1] == 1)
                             Instantiate(ground_R, pos, Quaternion.identity);
-                        else if (y < height - 1 && x < width - 1 && x != 0 && y != 0 && map[x, y + 1] == 0 && map[x + 1, y + 1] == 0 && map[x + 1, y] == 0 && map[x - 1, y] == 1 && map[x, y - 1] == 1)
+                        else if (y < height - 1 && x < width - 1 && x != 0 && y != 0 && map[x, y + 1][1, 1] == 0 && map[x + 1, y + 1][1, 1] == 0 && map[x + 1, y][1, 1] == 0 && map[x - 1, y][1, 1] == 1 && map[x, y - 1][1, 1] == 1)
                             Instantiate(ground_R_A, pos, Quaternion.identity);
-                        else if (x < width - 1 && y != 0 && map[x, y - 1] == 1 && map[x + 1, y] == 1 && map[x + 1, y - 1] == 0)
+                        else if (x < width - 1 && y != 0 && map[x, y - 1][1, 1] == 1 && map[x + 1, y][1, 1] == 1 && map[x + 1, y - 1][1, 1] == 0)
                             Instantiate(ground_R_B, pos, Quaternion.identity);
-                        else if (y < height - 1 && x < width - 1 && x != 0 && y != 0 && map[x, y + 1] == 1 && map[x - 1, y] == 1 && map[x + 1, y - 1] == 0 && map[x, y - 1] == 0 && map[x + 1, y] == 0)
+                        else if (y < height - 1 && x < width - 1 && x != 0 && y != 0 && map[x, y + 1][1, 1] == 1 && map[x - 1, y][1, 1] == 1 && map[x + 1, y - 1][1, 1] == 0 && map[x, y - 1][1, 1] == 0 && map[x + 1, y][1, 1] == 0)
                             Instantiate(ground_R_A_B, pos, Quaternion.identity);
-                        else if (y < height - 1 && x < width - 1 && map[x, y + 1] == 1 && map[x + 1, y] == 1 && map[x + 1, y + 1] == 0)
+                        else if (y < height - 1 && x < width - 1 && map[x, y + 1][1, 1] == 1 && map[x + 1, y][1, 1] == 1 && map[x + 1, y + 1][1, 1] == 0)
                             Instantiate(ground_R_T, pos, Quaternion.identity);
                         else
                             Instantiate(ground, pos, Quaternion.identity);
@@ -228,6 +282,7 @@ public class WorldGenerator : MonoBehaviour
         else if(keydown == "Enter")
         {
             Debug.Log("Input Value: " + count);
+            count = 0;
         }
     }
 

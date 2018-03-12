@@ -3218,9 +3218,11 @@ MonoBehaviour:
     type: 2}
   ground_R_T: {fileID: 1830558746011362, guid: 5ecc6478084c89044ad22e628fd7e2c9, type: 2}
   ground: {fileID: 1963421889697702, guid: b5495031b9be5cb41b01bade3a89d4f1, type: 2}
-  Test_1: {fileID: 1657273467684304, guid: 9045faf1de1ec3c4693f80e1b0f14851, type: 2}
+  Test_Object: {fileID: 0}
+  Testint: 0
   width: 100
   height: 10
+  cellSightLength: 1
   seed: 
   useRandomSeed: 1
   randomFillPercent: 48
