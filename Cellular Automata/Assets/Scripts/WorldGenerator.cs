@@ -1,41 +1,56 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System;
+using System.Collections.Generic;
 
 public class WorldGenerator : MonoBehaviour
 {
     // Prefabs of all the tiles
-    public GameObject ground_T;
-    public GameObject ground_B;
-    public GameObject ground_L;
-    public GameObject ground_L_A;
-    public GameObject ground_L_B;
-    public GameObject ground_L_A_B;
-    public GameObject ground_L_T;
-    public GameObject ground_R;
-    public GameObject ground_R_A;
-    public GameObject ground_R_B;
-    public GameObject ground_R_A_B;
-    public GameObject ground_R_T;
-    public GameObject ground;
+    [System.Serializable]
+    public class gameobjects
+    {
+        public GameObject ground_T;
+        public GameObject ground_B;
+        public GameObject ground_L;
+        public GameObject ground_L_A;
+        public GameObject ground_L_B;
+        public GameObject ground_L_A_B;
+        public GameObject ground_L_T;
+        public GameObject ground_R;
+        public GameObject ground_R_A;
+        public GameObject ground_R_B;
+        public GameObject ground_R_A_B;
+        public GameObject ground_R_T;
+        public GameObject ground;
+
+        public GameObject marker;
+    };
+    public gameobjects GameObjects;
 
     //Test Objects
-    public GameObject Test_Object;
-    public int Testint = 0;
+    //public GameObject Test_Object;
+    //public int Testint = 0;
 
-    // Map Size
+    [Header("Map Size")]
     public int width;
     public int height;
 
     public int cellSightLength;
+    [Space(10)]
 
-    // Seeds
+    [Header("Seeds")]
     public string seed;
     public bool useRandomSeed;
+    [Space(10)]
 
     //Random fill percent 
     [Range(0, 100)]
     public int randomFillPercent;
+    [Space(10)]
+
+    [Header("Graph")]
+    public bool makeGraph = false;
+    public int jumpDistance = 3;
 
     // Map array 
     int[,][,] map;
@@ -55,15 +70,11 @@ public class WorldGenerator : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.X))
             SmoothMap();
         if (Input.GetKeyDown(KeyCode.C))
+        {
             CreateWorld();
-
-        // Keys used for the Counting Input function
-        if (Input.GetKeyDown(KeyCode.UpArrow))
-            CountInput("Up");
-        if (Input.GetKeyDown(KeyCode.DownArrow))
-            CountInput("Down");
-        if (Input.GetKeyDown(KeyCode.KeypadEnter))
-            CountInput("Enter");
+            CreateGraph();
+        }
+            
     }
 
     // The begining process of creating the grid
@@ -79,6 +90,7 @@ public class WorldGenerator : MonoBehaviour
             }
         }
         RandomFillMap();
+
     }
 
     // Randomly sets cells to 1 or 0
@@ -122,27 +134,27 @@ public class WorldGenerator : MonoBehaviour
                 map[x,y][1,1] = Rule(x, y, GetSurroundingWallCount(x, y));            
             }
         }
-        
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                GetNeighbors(x,y);
 
-                //map[x, height - 1][1,1] = 0;
-                //map[x, height - 2][1,1] = 0;
+        //for (int x = 0; x < width; x++)
+        //{
+        //    for (int y = 0; y < height; y++)
+        //    {
+        //        GetNeighbors(x, y);
 
-                if (x != 0 && x < width - 1 && y != 0 && y < height - 1)
-                {
-                    if (map[x - 1, y + 1][1,1] == 1 || map[x, y + 1][1,1] == 1 || map[x + 1, y + 1][1,1] == 1)
-                    {
-                        //map[x - 1, y + 1] = 0;
-                        //map[x, y + 1] = 0;
-                        //map[x + 1, y + 1] = 0;
-                    }
-                }
-            }
-        }
+        //        map[x, height - 1][1, 1] = 0;
+        //        map[x, height - 2][1, 1] = 0;
+
+        //        if (x != 0 && x < width - 1 && y != 0 && y < height - 1)
+        //        {
+        //            if (map[x - 1, y + 1][1, 1] == 1 || map[x, y + 1][1, 1] == 1 || map[x + 1, y + 1][1, 1] == 1)
+        //            {
+        //                map[x - 1, y + 1] = 0;
+        //                map[x, y + 1] = 0;
+        //                map[x + 1, y + 1] = 0;
+        //            }
+        //        }
+        //    }
+        //}
     }
 
     // Returns the aount of walls of the given cell
@@ -191,13 +203,131 @@ public class WorldGenerator : MonoBehaviour
 
         // DEBUG STUFF
 
-        //for (int j = 0; j < cellSightLength; j++)
+        //for (int j = -cellSightLength; j < cellSightLength + 1; j++)
         //{
-        //    for (int i = 0; i < cellSightLength; i++)
+        //    for (int i = -cellSightLength; i < cellSightLength + 1; i++)
         //    {
-        //        Debug.Log("[" + x + "," + y + "]" + "[" + (j + 0) + "," + (i + 0) + "]: " + map[x, y][j, i]);
+        //        Debug.Log("[" + x + "," + y + "]" + "[" + (j + cellSightLength) + "," + (i + cellSightLength) + "]: " + map[x, y][i + cellSightLength, i + cellSightLength]);
         //    }
         //}
+    }
+
+    class Vertex
+    {
+        public int x;
+        public int y;
+
+        public void SetXandY(int xin, int yin)
+        {
+            x = xin;
+            y = yin;
+        }
+
+        public override string ToString()
+        {
+            string str = x.ToString() + "," + y.ToString();
+
+            return str;
+        }
+    }
+
+    class Edges
+    {
+        public Vertex source;
+        public Vertex target;
+
+        public void SetEdge(Vertex sourc, Vertex targe)
+        {
+            source = sourc;
+            target = targe;
+        }
+
+        public override string ToString()
+        {
+            String str = source.ToString() + " " + target.ToString();
+
+            return str;
+        }
+    }
+
+    class Graph
+    {
+        public List<Vertex> vertices = new List<Vertex>();
+        public List<Edges> edges = new List<Edges>();
+
+        public void AddVertex(Vertex v)
+        {
+            vertices.Add(v);
+        }
+
+        public void AddEdge(Edges e)
+        {
+            edges.Add(e);
+        }
+    }
+
+    
+    Graph g = new Graph();
+
+    Vector2 source = new Vector2();
+    Vector2 target = new Vector2();
+
+    void CreateGraph()
+    {
+        if (makeGraph)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    Vector3 pos = new Vector3(x, y, 0);
+
+                    if (map[x,y][1,1] == 1)
+                    {
+                        
+                        Instantiate(GameObjects.marker, pos, Quaternion.identity);
+                        FindEdges(x, y);
+
+                        Debug.DrawLine(source, target, Color.red, 20f);
+                        //Debug.Log(source.x.ToString() + "," + source.y.ToString() + " to " + target.x.ToString() + "," + target.y.ToString());
+                    }
+                }
+            }
+        }
+    }
+
+    void FindEdges(int x,int y)
+    {
+        Vertex v = new Vertex();
+        v.SetXandY(x, y);
+        g.AddVertex(v);
+        for (int j = -cellSightLength; j < cellSightLength + 1; j++)
+        {
+            for (int i = -cellSightLength; i < cellSightLength + 1; i++)
+            {
+
+                //if (j != 1 && i != 1)
+                //{
+                if (map[x,y][j + cellSightLength, i + cellSightLength] == 1)
+                {
+                    
+                    Vertex v1 = new Vertex();
+                    Edges e = new Edges();
+                    e.source = v;
+
+                    v1.SetXandY(x + j, y + i);
+                    g.AddVertex(v1);
+                    e.target = v1;
+                    g.AddEdge(e);
+                    Debug.Log(e.ToString());
+                    //Create new vector2 instead of overriding 
+                    source.Set(x, y);
+                    target.Set(x + j, y + i);
+                    Debug.DrawLine(source, target, Color.red, 20f);
+                }
+                //}
+            }
+        }
     }
 
     // DEBUG STUFF
@@ -220,7 +350,6 @@ public class WorldGenerator : MonoBehaviour
     //    }
     //}
 
-
     // Spawns in objects to create the world
     void CreateWorld()
     {
@@ -230,60 +359,40 @@ public class WorldGenerator : MonoBehaviour
             {
                 for (int y = 0; y < height; y++)
                 {
-                    Vector3 pos = new Vector3(-width / 2 + x + .5f, -height / 2 + y + .5f, 0);
+                    Vector3 pos = new Vector3(x, y, 0);
 
                     if (map[x, y][1,1] == 1)
                     {
                         if (y < height - 1 && x < width - 1 && x != 0 && map[x, y + 1][1, 1] == 0 && map[x - 1, y][1, 1] == 1 && map[x + 1, y][1, 1] == 1)
-                            Instantiate(ground_T, pos, Quaternion.identity);
+                            Instantiate(GameObjects.ground_T, pos, Quaternion.identity);
                         else if (x < width - 1 && x != 0 && y != 0 && map[x, y - 1][1, 1] == 0 && map[x - 1, y][1, 1] == 1 && map[x + 1, y][1, 1] == 1)
-                            Instantiate(ground_B, pos, Quaternion.identity);
+                            Instantiate(GameObjects.ground_B, pos, Quaternion.identity);
                         else if (y < height - 1 && x != 0 && y != 0 && map[x, y + 1][1, 1] == 1 && map[x - 1, y][1, 1] == 0 && map[x, y - 1][1, 1] == 1)
-                            Instantiate(ground_L, pos, Quaternion.identity);
+                            Instantiate(GameObjects.ground_L, pos, Quaternion.identity);
                         else if (y < height - 1 && x < width - 1 && x != 0 && y != 0 && map[x, y - 1][1, 1] == 1 && map[x + 1, y][1, 1] == 1 && map[x - 1, y][1, 1] == 0 && map[x - 1, y + 1][1, 1] == 0 && map[x, y + 1][1, 1] == 0)
-                            Instantiate(ground_L_A, pos, Quaternion.identity);
+                            Instantiate(GameObjects.ground_L_A, pos, Quaternion.identity);
                         else if (x != 0 && y != 0 && map[x, y - 1][1, 1] == 1 && map[x - 1, y][1, 1] == 1 && map[x - 1, y - 1][1, 1] == 0)
-                            Instantiate(ground_L_B, pos, Quaternion.identity);
+                            Instantiate(GameObjects.ground_L_B, pos, Quaternion.identity);
                         else if (y < height - 1 && x < width - 1 && x != 0 && y != 0 && map[x, y + 1][1, 1] == 1 && map[x + 1, y][1, 1] == 1 && map[x - 1, y - 1][1, 1] == 0 && map[x, y - 1][1, 1] == 0 && map[x - 1, y][1, 1] == 0)
-                            Instantiate(ground_L_A_B, pos, Quaternion.identity);
+                            Instantiate(GameObjects.ground_L_A_B, pos, Quaternion.identity);
                         else if (y < height - 1 && x != 0 && map[x, y + 1][1, 1] == 1 && map[x - 1, y][1, 1] == 1 && map[x - 1, y + 1][1, 1] == 0)
-                            Instantiate(ground_L_T, pos, Quaternion.identity);
+                            Instantiate(GameObjects.ground_L_T, pos, Quaternion.identity);
                         else if (y < height - 1 && x < width - 1 && y != 0 && map[x, y + 1][1, 1] == 1 && map[x + 1, y][1, 1] == 0 && map[x, y - 1][1, 1] == 1)
-                            Instantiate(ground_R, pos, Quaternion.identity);
+                            Instantiate(GameObjects.ground_R, pos, Quaternion.identity);
                         else if (y < height - 1 && x < width - 1 && x != 0 && y != 0 && map[x, y + 1][1, 1] == 0 && map[x + 1, y + 1][1, 1] == 0 && map[x + 1, y][1, 1] == 0 && map[x - 1, y][1, 1] == 1 && map[x, y - 1][1, 1] == 1)
-                            Instantiate(ground_R_A, pos, Quaternion.identity);
+                            Instantiate(GameObjects.ground_R_A, pos, Quaternion.identity);
                         else if (x < width - 1 && y != 0 && map[x, y - 1][1, 1] == 1 && map[x + 1, y][1, 1] == 1 && map[x + 1, y - 1][1, 1] == 0)
-                            Instantiate(ground_R_B, pos, Quaternion.identity);
+                            Instantiate(GameObjects.ground_R_B, pos, Quaternion.identity);
                         else if (y < height - 1 && x < width - 1 && x != 0 && y != 0 && map[x, y + 1][1, 1] == 1 && map[x - 1, y][1, 1] == 1 && map[x + 1, y - 1][1, 1] == 0 && map[x, y - 1][1, 1] == 0 && map[x + 1, y][1, 1] == 0)
-                            Instantiate(ground_R_A_B, pos, Quaternion.identity);
+                            Instantiate(GameObjects.ground_R_A_B, pos, Quaternion.identity);
                         else if (y < height - 1 && x < width - 1 && map[x, y + 1][1, 1] == 1 && map[x + 1, y][1, 1] == 1 && map[x + 1, y + 1][1, 1] == 0)
-                            Instantiate(ground_R_T, pos, Quaternion.identity);
+                            Instantiate(GameObjects.ground_R_T, pos, Quaternion.identity);
                         else
-                            Instantiate(ground, pos, Quaternion.identity);
+                            Instantiate(GameObjects.ground, pos, Quaternion.identity);
                     }
                         
                 }
             }
         }
     }
-
-    int count = 0;
-    
-    void CountInput(string keydown)
-    {
-        if (keydown == "Up")
-        {
-            count++;
-        }
-        else if (keydown == "Down")
-        {
-            count--;
-        }
-        else if(keydown == "Enter")
-        {
-            Debug.Log("Input Value: " + count);
-            count = 0;
-        }
-    }
-
 }
